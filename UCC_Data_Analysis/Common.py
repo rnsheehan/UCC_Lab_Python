@@ -1,15 +1,19 @@
-﻿# Set of functions that will be common to all python scripts
-# File IO, Data Analysis etc. 
-# It should be possible to call the functions using
-# import Common
-# May need to use compile and exec
-# You need to tell whatever script you are writing where the Common.py
-# file is stored.
-# This is done in the file with the sys library
-# R. Sheehan 12 - 12 - 2014
+﻿"""
+Set of functions that will be common to all python scripts
+File IO, Data Analysis etc. 
+
+
+R. Sheehan 12 - 12 - 2014
+"""
 
 # In python this is known as a Module
 # https://docs.python.org/3/tutorial/modules.html
+
+#It should be possible to call the functions using
+#import Common
+
+#You need to tell whatever script you are writing where the Common.py file is stored.
+#This is done in the file with the sys library
 
 MOD_NAME_STR = "Common" # use this in exception handling messages
 
@@ -136,7 +140,7 @@ def open_file(thepath):
     # it may be an idea to return a dictionary or something
     # R. Sheehan 26 - 4 - 2014
 
-    thefile = file(thepath,"r") # open file for reading
+    thefile = open(thepath,"r") # open file for reading
 
     # check that the files are available
     if thefile.closed:
@@ -202,7 +206,7 @@ def read_two_columns(name, delimiter = ',', quiet = 0):
     
     # read two columns of data from a file
 
-    thefile = file(name,"r") # open file for reading
+    thefile = open(name,"r") # open file for reading
 
     success = -1
 
@@ -238,7 +242,7 @@ def read_three_columns(name, quiet = 0):
 
     # read three columns of data from a file
 
-    thefile = file(name,"r") # open file for reading
+    thefile = open(name,"r") # open file for reading
 
     success = -1
 
@@ -305,7 +309,7 @@ def read_five_columns(name):
 
     # useful for band diagram data
 
-    thefile = file(name,"r") # open file for reading
+    thefile = open(name,"r") # open file for reading
 
     success = -1
 
@@ -506,7 +510,7 @@ def read_four_columns(name, loud = False):
     # read four columns of data from a file
     # useful for plotting multiple data sets
 
-    thefile = file(name,"r") # open file for reading
+    thefile = open(name,"r") # open file for reading
 
     success = -1
 
@@ -722,7 +726,7 @@ def delete_files(file_extension, proceed = False):
         # ask the user to ensure that they want to delete all files
         gonogo = False
 
-        gonogo = raw_input('Do you really want to delete all ' + file_extension + ' files: ')
+        gonogo = input('Do you really want to delete all ' + file_extension + ' files: ')
 
         if gonogo:
             for name in thefiles: os.remove(name)
