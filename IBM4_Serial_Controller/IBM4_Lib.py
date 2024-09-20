@@ -173,8 +173,8 @@ class Ser_Iface(object):
         try:            
             # confirm that the instrument object has been instantiated
             if self.instr_obj.isOpen():
-                self.instr_obj.reset_input_buffer()
-                #self.instr_obj.reset_output_buffer() # this appears to have no effect
+                self.instr_obj.reset_input_buffer() # this appears to have no effect
+                self.instr_obj.reset_output_buffer() # this appears to have no effect
             else:
                 self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not read from instrument\nNo comms established'
                 raise Exception
@@ -262,11 +262,28 @@ class Ser_Iface(object):
 
         try:
             if self.instr_obj.isOpen():
-                self.ResetBuffer() # reset buffer between write, read cmd pairs
+                #self.ResetBuffer() # reset buffer between write, read cmd pairs, seems to be having no effect
                 self.instr_obj.write(b'*IDN\r\n')
                 response = self.instr_obj.read_until('\n',size=None)
                 Code=response.rsplit(b'\r\n')
-                return Code[1] if len(Code) > 1 else None
+
+                #return Code[1] if len(Code) > 1 else None
+
+                # Need a more generic way to locate the ISBY string
+                # because the ResetBuffer Call does not seem to be having any effect
+                # Must encode the test string as bytes because Python 3.X is really pedantic
+                #print(type('ISBY')) # type str #print(type(Code[i])) # type bytes
+                count = -1
+                for i in range(0,len(Code), 1): 
+                    if b'ISBY' in Code[i]: 
+                        count = i                
+                        break
+                return Code[count] if count>-1 else None
+            
+                # Pythonic method
+                #https://stackoverflow.com/questions/4843158/how-to-check-if-a-string-is-a-substring-of-items-in-a-list-of-strings
+                #matching = [s for s in Code if b'ISBY' in s]
+                #return matching[0] if len(matching)>0 else None
             else:
                 # Do nothing, no link to IBM4 established
                 pass
@@ -388,7 +405,7 @@ class Ser_Iface(object):
                 write_cmd = 'Write%(v1)d:%(v2)0.2f\r\n'%{"v1":self.Write_Chnnls[output_channel], "v2":set_voltage}
                 self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
                 #time.sleep(DELAY) # no need for explicit delay, this is handled by write_timeout
-                #self.ResetBuffer() # reset buffer between write, read cmd pairs
+                self.ResetBuffer() # reset buffer between write, read cmd pairs
             else:
                 if not c1:
                     self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nNo comms established'
@@ -1300,7 +1317,7 @@ class Ser_Iface(object):
         print('Differential Read Value = %(v1)0.3f +/- %(v2)0.3f (V)'%{"v1":diff_res[0], "v2":diff_res[1]})
         
     # methods for initiating voltage sweeps
-    def SingleChannelSweep(self, swp_channel, v_strt, v_end, no_steps, v_fixed = 0.0, no_averages = 10):
+    def SingleChannelSweepA(self, swp_channel, v_strt, v_end, no_steps, v_fixed = 0.0, no_averages = 10):
     
         """
         Enable the microcontroller to perform a linear sweep of measurements using a single channel
@@ -1332,9 +1349,9 @@ class Ser_Iface(object):
             c1 = self.instr_obj.isOpen() # confirm that the intstrument object has been instantiated
             c2 = True if swp_channel in self.Write_Chnnls else False # confirm that the output channel label is correct             
             c3 = True if v_strt >= self.VMIN and v_strt < v_end else False # confirm that the voltage sweep bounds are in range
-            c4 = True if v_end > v_strt and v_end < self.VMAX else False # confirm that the voltage sweep bounds are in range
+            c4 = True if v_end > v_strt and v_end <= self.VMAX else False # confirm that the voltage sweep bounds are in range
             c5 = True if (v_end - v_strt) > self.DELTA_VMIN else False # confirm that the voltage sweep bounds are in range
-            c8 = True if v_fixed >= self.VMIN and v_fixed < self.VMAX else False # confirm that the fixed voltage is in range
+            c8 = True if v_fixed >= self.VMIN and v_fixed <= self.VMAX else False # confirm that the fixed voltage is in range
             c6 = True if no_steps > 2 else False # confirm that the no. of steps is appropriate
             c7 = True if no_averages > 3 and no_averages < 103 else False # confirm that no. averages being taken is a sensible value
             c10 = c1 and c2 and c3 and c4 and c5 and c6 and c7 and c8
@@ -1349,7 +1366,9 @@ class Ser_Iface(object):
                 delta_v = max( (v_end - v_strt) / float(no_steps - 1), self.DELTA_VMIN) # Determine the sweep voltage increment, this is bounded below by delta_v_min
                 v_set = v_strt # initialise the set-voltage
                 # perform the sweep
-                print('Sweeping voltage on Analog Output: ',swp_channel)
+                print('\nLinear Sweep in Progress')
+                print('Sweeping voltage on Analog Output:',swp_channel)
+                print('Fixed voltage of',v_fixed,'(V) on Analog Output:',fixed_channel,'\n')
                 count = 0
                 while v_set < v_end:
                     step_data = numpy.array([]) # instantiate an empty numpy array to hold the data for each step of the sweep
@@ -1386,7 +1405,7 @@ class Ser_Iface(object):
             print(self.ERR_STATEMENT)
             print(e)    
             
-    def SingleChannelSweep(self, swp_channel, voltage_interval:Sweep_Interval.SweepSpace, v_fixed = 0.0, no_averages = 10):
+    def SingleChannelSweepB(self, swp_channel, voltage_interval:Sweep_Interval.SweepSpace, v_fixed = 0.0, no_averages = 10):
     
         """
         Enable the microcontroller to perform a linear sweep of measurements using a single channel
@@ -1438,7 +1457,9 @@ class Ser_Iface(object):
                 voltage_data = numpy.array([]) # instantiate an empty numpy array to store the sweep data
                 v_set = voltage_interval.start # initialise the set-voltage
                 # perform the sweep
-                print('Sweeping voltage on Analog Output: ',swp_channel)
+                print('\nLinear Sweep in Progress')
+                print('Sweeping voltage on Analog Output:',swp_channel)
+                print('Fixed voltage of',v_fixed,'(V) on Analog Output:',fixed_channel,'\n')
                 count = 0
                 while v_set < voltage_interval.stop:
                     step_data = numpy.array([]) # instantiate an empty numpy array to hold the data for each step of the sweep
