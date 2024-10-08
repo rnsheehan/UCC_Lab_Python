@@ -29,10 +29,10 @@ print(pwd)
 #Control_Examples.Differential_Readings()
 
 # 5. Multi-reads and timings
-Control_Examples.Multiple_Readings()
+#Control_Examples.Multiple_Readings()
 
 # 6. Multimeter mode
-#Control_Examples.Multimeter_Mode()
+Control_Examples.Multimeter_Mode()
 
 # 7. Linear single channel sweep
 #Control_Examples.Linear_Sweep_V1()
