@@ -372,8 +372,6 @@ class Ser_Iface(object):
             if c10:
                 write_cmd = 'Mode%(v1)d\r\n'%{"v1":self.Read_Modes[read_mode]}
                 self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
-                read_result = self.instr_obj.read_until(size=write_cmd.__sizeof__()) # read_result returned as bytes and clear the input buffer 
-                read_result = self.instr_obj.read_until(b'\n', size=None) # read_result returned as bytes and clear the input buffer                  
                 self.ResetBuffer() # reset buffer between write, read cmd pairs
             else:
                 if not c1:
@@ -410,7 +408,6 @@ class Ser_Iface(object):
                 write_cmd = 'Write%(v1)d:%(v2)0.2f\r\n'%{"v1":self.Write_Chnnls[output_channel], "v2":set_voltage}
                 self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
                 #time.sleep(DELAY) # no need for explicit delay, this is handled by write_timeout
-                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result to clear the input buffer  
                 self.ResetBuffer() # reset buffer between write, read cmd pairs
             else:
                 if not c1:
@@ -718,8 +715,7 @@ class Ser_Iface(object):
                 read_cmd = 'Average%(v1)d:%(v2)d\r\n'%{"v1":self.Read_Chnnls[input_channel], "v2":no_reads} # generate the read command
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes                
                 # Working
-                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
-                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                
+                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                
                 vals = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list
                 res = float(vals[-1])
                 self.ResetBuffer() # reset buffer between write, read cmd pairs

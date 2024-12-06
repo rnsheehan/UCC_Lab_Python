@@ -1,64 +1,45 @@
-Hi Rob,
+Email from Frank 6 - 12 - 2024
 
- 
+Hi Rob,
 
 I think I have improved the Python code that you provided as it was missing a few things.
 
-    Every time you write anything to the IBM4, it parrots the same command back.
-        Thus, it is important to read that command to clear the buffer.
-    Two of the PWM channels were not accepted, and returned errors (5 and 7), so I eliminated them from the list.
-    When reading data, ‘\n’ doesn’t work (I had to do a USB sniffer session to figure this all out), and the code always goes to timeout.
-        Instead, you need to use: b’\n’
-
- 
+Every time you write anything to the IBM4, it parrots the same command back.
+Thus, it is important to read that command to clear the buffer.
+Two of the PWM channels were not accepted, and returned errors (5 and 7), so I eliminated them from the list.
+When reading data, ‘\n’ doesn’t work (I had to do a USB sniffer session to figure this all out), and the code always goes to timeout instead, you need to use: b’\n’
 
 Here is an example of updated code in the write function:
 
- 
+write_cmd = 'Write%(v1)d:%(v2)0.2f\r\n'%{"v1":self.Write_Chnnls[output_channel], "v2":set_voltage}
 
-                write_cmd = 'Write%(v1)d:%(v2)0.2f\r\n'%{"v1":self.Write_Chnnls[output_channel], "v2":set_voltage}
+self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
 
-                self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
+#time.sleep(DELAY) # no need for explicit delay, this is handled by write_timeout
 
-                #time.sleep(DELAY) # no need for explicit delay, this is handled by write_timeout
-
-                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result to clear the input buffer  
-
- 
+read_result = self.instr_obj.read_until(b'\n',size=None) # read_result to clear the input buffer  
 
 Only the last line is new. Here, the “b” was added to ‘\n’ and it reads back the parroted command immediately.
 
- 
-
- 
-
 Here is an example using the read function:
 
- 
+read_cmd = 'Average%(v1)d:%(v2)d\r\n'%{"v1":self.Read_Chnnls[input_channel], "v2":no_reads} # generate the read command
 
-                read_cmd = 'Average%(v1)d:%(v2)d\r\n'%{"v1":self.Read_Chnnls[input_channel], "v2":no_reads} # generate the read command
+self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes                
 
-                self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes                
+# Working
 
-                # Working
+read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
 
-                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
-
-                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed    
-
- 
+read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed    
 
 I now have two read lines. The first reads back the parroted response (so I know how long it is automatically).
 
 The second read back the data, and uses the “b” before the ‘\n’, so now operates immediately.
 
- 
-
 So far, I have only used: Control_Examples.Simple_Sweep() to check the various functions, which now operate very quickly.
 
 It used to take 4-5 seconds for that subroutine to run, and now basically blinks.
-
- 
 
 Communication with: COM3  is open
 
@@ -80,16 +61,10 @@ Vset: 3.0 , Vread:  0.120265
 
 Closing Serial link with: COM3
 
- 
-
 Here is a link to the adjusted file, for you to take a look:
 
 https://www.dropbox.com/scl/fi/zsaxvqoq70u2nlumsuf8k/IBM4_Lib.py?rlkey=tdjv776o31dlbgni4gqb25j2k&dl=0
 
- 
-
 Note that I don’t really know what the following is supposed to do: self.ResetBuffer()
-
- 
 
 -Frank
