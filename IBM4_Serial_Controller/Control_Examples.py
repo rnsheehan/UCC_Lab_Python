@@ -66,23 +66,23 @@ def Step_Through_Voltages():
 
         volt_val = 1.0
         the_dev.WriteVoltage(output_ch, volt_val)
-        time.sleep(1)
+        time.sleep(2)
 
         volt_val = 1.5
         the_dev.WriteVoltage(output_ch, volt_val)
-        time.sleep(1)
+        time.sleep(2)
 
         volt_val = 2.0
         the_dev.WriteVoltage(output_ch, volt_val)
-        time.sleep(1)
+        time.sleep(2)
 
         volt_val = 1.7
         the_dev.WriteVoltage(output_ch, volt_val)
-        time.sleep(1)
+        time.sleep(2)
 
         volt_val = 0.7
         the_dev.WriteVoltage(output_ch, volt_val)
-        time.sleep(1)
+        time.sleep(2)
 
         avg_val = the_dev.ReadAverageVoltage(input_ch, no_reads = 10, loud = False)
         print("Set voltage value = ",volt_val)
@@ -107,7 +107,7 @@ def Simple_Sweep():
         
         output_ch = 'A1' # select the voltage output channel either A0 or A1
         input_ch = 'A2' # select the voltage input channel A2, A3, A4, A5, D2
-        Nreads = 11 # no. readinngs at each channel
+        Nreads = 51 # no. readings at each channel
         volts = numpy.arange(0, 3.1, 1)
 
         print("Analog Output Sweep + Averaged Read on Single Channel")
@@ -144,7 +144,7 @@ def Simple_Sweep_Read_All():
         the_dev = IBM4_Lib.Ser_Iface() # find the first connected IBM4, open in DC mode by default
         
         output_ch = 'A1' # select the voltage output channel either A0 or A1
-        Nreads = 11 # no. readinngs at each channel
+        Nreads = 31 # no. readinngs at each channel
         NAI = 5 # no. analog input channels
         volts = numpy.arange(0, 3.1, 0.5)
 
@@ -246,14 +246,13 @@ def Multiple_Readings():
 
         Nreads = 501
         Vset = 1.5
-        output_ch = 'A0'
+        output_ch = 'A1'
         the_dev.WriteVoltage(output_ch,Vset)
-        the_dev.ResetBuffer()
         time.sleep(1)
 
         print("Multiple Reads by Different Methods - Test the Overloaded ReadVoltage method")
         print("Analog Out:",output_ch)
-        print("Vset =",Vset,"(V)")
+        print("Vset =",Vset,"(V)\n")
 
         # time the measurement
         start = time.time()
@@ -267,7 +266,7 @@ def Multiple_Readings():
         print("%(v1)d measurements performed in %(v2)0.3f seconds"%{"v1":Nreads, "v2":deltaT})
         print("%(v1)0.4f secs / measurement"%{"v1":measT})
         print("Sample Rate: %(v1)0.2f Hz"%{"v1":SR })
-        print("Measured Voltage: %(v1)0.3f +/- %(v2)0.3f (V)"%{"v1":avg,"v2":err})
+        print("Measured Voltage: %(v1)0.3f +/- %(v2)0.3f (V)\n"%{"v1":avg,"v2":err})
 
         start = time.time()
         #val = the_dev.ReadAverageVoltage('A3',Nreads)
@@ -277,10 +276,10 @@ def Multiple_Readings():
         measT = deltaT/(float(Nreads))
         SR = 1.0/measT
         print("Analog Input: A3, Read Method: Average Voltage => ReadAverageVoltage")
-        print("\n%(v1)d measurements performed in %(v2)0.3f seconds"%{"v1":Nreads, "v2":deltaT})
+        print("%(v1)d measurements performed in %(v2)0.3f seconds"%{"v1":Nreads, "v2":deltaT})
         print("%(v1)0.4f secs / measurement"%{"v1":measT})
         print("Sample Rate: %(v1)0.2f Hz"%{"v1":SR })
-        print("Measured Voltage: %(v1)0.3f (V)"%{"v1":val})
+        print("Measured Voltage: %(v1)0.3f (V)\n"%{"v1":val})
 
         start = time.time()
         val = the_dev.ReadAverageVoltageAllChnnl(Nreads)
@@ -289,11 +288,11 @@ def Multiple_Readings():
         measT = deltaT/(float(Nreads*5))
         SR = 1.0/measT
         print("Analog Input: All, Read Method: ReadAverageVoltageAllChnnl")
-        print("\n%(v1)d measurements performed in %(v2)0.3f seconds"%{"v1":Nreads*5, "v2":deltaT})
+        print("%(v1)d measurements performed in %(v2)0.3f seconds"%{"v1":Nreads*5, "v2":deltaT})
         print("%(v1)0.4f secs / measurement"%{"v1":measT})
         print("Sample Rate: %(v1)0.2f Hz"%{"v1":SR})
         print("Measured Voltages: ", val)
-        print("\nSR from each Read method are comparable")
+        #print("\nSR from each Read method are comparable")
 
         del the_dev # destructor for the IBM4 object, closes comms
     except Exception as e:

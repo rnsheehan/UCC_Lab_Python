@@ -167,6 +167,9 @@ class Ser_Iface(object):
         In order to be able to sweep correctly the buffer must be reset between write, read command pairs
         """
 
+        # I'm not sure if this method actually does anything
+        # R. Sheehan 12 - 12 - 2024
+
         self.FUNC_NAME = ".ResetBuffer()" # use this in exception handling messages
         self.ERR_STATEMENT = "Error: " + self.MOD_NAME_STR + self.FUNC_NAME
 
@@ -409,9 +412,8 @@ class Ser_Iface(object):
             if c10:
                 write_cmd = 'Write%(v1)d:%(v2)0.2f\r\n'%{"v1":self.Write_Chnnls[output_channel], "v2":set_voltage}
                 self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
-                #time.sleep(DELAY) # no need for explicit delay, this is handled by write_timeout
+                read_result = self.instr_obj.read_until(size=write_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
                 read_result = self.instr_obj.read_until(b'\n',size=None) # read_result to clear the input buffer  
-                self.ResetBuffer() # reset buffer between write, read cmd pairs
             else:
                 if not c1:
                     self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nNo comms established'
@@ -447,7 +449,8 @@ class Ser_Iface(object):
                 output_channel = self.PWM_Chnnls["D9"] # when using the IBM4 enhancement board the PWM is fixed to D9
                 write_cmd = 'PWM%(v1)d:%(v2)d\r\n'%{"v1":output_channel, "v2":percentage}
                 self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
-                #self.ResetBuffer() # reset buffer between write, read cmd pairs
+                read_result = self.instr_obj.read_until(size=write_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result to clear the input buffer  
             else:
                 if not c1:
                     self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nNo comms established'
@@ -595,7 +598,8 @@ class Ser_Iface(object):
                 no_reads = 1 # 
                 read_cmd = 'Read%(v1)d:%(v2)d\r\n'%{"v1":self.Read_Chnnls[input_channel], "v2":no_reads} # generate the read command
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes                
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list
                 res = float(vals[-1])
                 self.ResetBuffer() # reset buffer between write, read cmd pairs
@@ -639,7 +643,8 @@ class Ser_Iface(object):
                 no_reads = 1 # 
                 read_cmd = 'BRead%(v1)d:%(v2)d\r\n'%{"v1":self.Read_Chnnls[input_channel], "v2":no_reads} # generate the read command
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes                
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list
                 res = int(vals[-1])
                 self.ResetBuffer() # reset buffer between write, read cmd pairs
@@ -717,12 +722,11 @@ class Ser_Iface(object):
             if c10:
                 read_cmd = 'Average%(v1)d:%(v2)d\r\n'%{"v1":self.Read_Chnnls[input_channel], "v2":no_reads} # generate the read command
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes                
-                # Working
                 read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
-                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list
                 res = float(vals[-1])
-                self.ResetBuffer() # reset buffer between write, read cmd pairs
+                #self.ResetBuffer() # reset buffer between write, read cmd pairs
                 if loud: 
                     print(read_result)
                     print(vals) # print the parsed values
@@ -752,8 +756,8 @@ class Ser_Iface(object):
         read_vals (type: numpy array) contains the averaged voltage reading at each analog input channel
         """
         
-        FUNC_NAME = ".ReadAverageVoltageAllChnnl()" # use this in exception handling messages
-        ERR_STATEMENT = "Error: " + self.MOD_NAME_STR + FUNC_NAME
+        self.FUNC_NAME = ".ReadAverageVoltageAllChnnl()" # use this in exception handling messages
+        self.ERR_STATEMENT = "Error: " + self.MOD_NAME_STR + self.FUNC_NAME
 
         try:
             c1 = True if self.instr_obj.isOpen() else False # confirm that the instrument object has been instantiated
@@ -811,10 +815,9 @@ class Ser_Iface(object):
             if c10:
                 read_cmd = 'Read%(v1)d:%(v2)d\r\n'%{"v1":self.Read_Chnnls[input_channel], "v2":no_reads} # generate the read command
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes                
-                # Working
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list
-                self.ResetBuffer() # reset buffer between write, read cmd pairs
                 vals_flt = numpy.float_(vals_str[-no_reads:]) # convert the list of strings to floats using numpy, save as numpy array (better)
                 vals_mean = numpy.mean(vals_flt) # compute the average of all the diff_reads
                 vals_delta = 0.5*( numpy.max(vals_flt) - numpy.min(vals_flt) ) # compute the range of the diff_read
@@ -917,7 +920,8 @@ class Ser_Iface(object):
                 no_reads = 1
                 read_cmd = 'Diff_Read%(v1)d:%(v2)d:%(v3)d\r\n'%{"v1":self.Read_Chnnls[pos_channel], "v2":self.Read_Chnnls[neg_channel], "v3":no_reads}
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list of strings
                 res = float(vals_str[-1])
                 self.ResetBuffer() # clear the IBM4 buffer after each read            
@@ -971,7 +975,8 @@ class Ser_Iface(object):
             if c10:
                 read_cmd = 'Diff_Average%(v1)d:%(v2)d:%(v3)d\r\n'%{"v1":self.Read_Chnnls[pos_channel], "v2":self.Read_Chnnls[neg_channel], "v3":no_reads}
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list of strings
                 res = float(vals_str[-1])
                 self.ResetBuffer() # clear the IBM4 buffer after each read            
@@ -1030,7 +1035,8 @@ class Ser_Iface(object):
             if c10:
                 read_cmd = 'Diff_Read%(v1)d:%(v2)d:%(v3)d\r\n'%{"v1":self.Read_Chnnls[pos_channel], "v2":self.Read_Chnnls[neg_channel], "v3":no_reads}
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list of strings
                 #vals_flt = [float(x) for x in vals_str] # convert the list of strings to floats, save as a list
                 # only interested in the last no_reads values so read backwards into the vals_str list using list-slice operator
@@ -1091,7 +1097,8 @@ class Ser_Iface(object):
                 no_reads = 1
                 read_cmd = 'Diff_BRead%(v1)d:%(v2)d:%(v3)d\r\n'%{"v1":self.Read_Chnnls[pos_channel], "v2":self.Read_Chnnls[neg_channel], "v3":no_reads}
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list of strings
                 res = int(vals_str[-1])
                 self.ResetBuffer() # clear the IBM4 buffer after each read            
@@ -1145,7 +1152,8 @@ class Ser_Iface(object):
             if c10:
                 read_cmd = 'Diff_BRead%(v1)d:%(v2)d:%(v3)d\r\n'%{"v1":self.Read_Chnnls[pos_channel], "v2":self.Read_Chnnls[neg_channel], "v3":no_reads}
                 self.instr_obj.write( str.encode(read_cmd) ) # when using serial str must be encoded as bytes
-                read_result = self.instr_obj.read_until('\n',size=None) # read_result returned as bytes, must be cast to str before being parsed
+                read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list of strings
                 #vals_flt = [float(x) for x in vals_str] # convert the list of strings to floats, save as a list
                 # only interested in the last no_reads values so read backwards into the vals_str list using list-slice operator
