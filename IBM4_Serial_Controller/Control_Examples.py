@@ -336,9 +336,9 @@ def Linear_Sweep_V1():
         v_end = 3.3
         v_fixed = 1.0
 
-        # A1 will sweep while A0 will be kept constant at v_fixed
+        # A0 will sweep while A1 will be kept constant at v_fixed
         # I wonder what that could be used for? 
-        sweep_data = the_dev.SingleChannelSweepA('A1', v_start, v_end, no_steps, v_fixed) # use channel A1 to sweep over the voltage interval
+        sweep_data = the_dev.SingleChannelSweepA('A0', v_start, v_end, no_steps, v_fixed) # use channel A0 to sweep over the voltage interval
 
         print('Measured data')
         print(sweep_data)
@@ -366,9 +366,9 @@ def Linear_Sweep_V2():
         v_end = 3.3
         the_interval = Sweep_Interval.SweepSpace(no_steps, v_start, v_end)
 
-        # A0 will sweep while A1 will be kept constant at v_fixed
+        # A1 will sweep while A0 will be kept constant at v_fixed
         # I wonder what that could be used for? 
-        sweep_data = the_dev.SingleChannelSweepB('A0', the_interval, v_fixed = 0.0) # use channel A1 to sweep over the voltage interval
+        sweep_data = the_dev.SingleChannelSweepB('A1', the_interval, v_fixed = 0.0) # use channel A1 to sweep over the voltage interval
 
         print('Measured data')
         print(sweep_data)

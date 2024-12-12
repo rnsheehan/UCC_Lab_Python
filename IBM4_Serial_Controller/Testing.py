@@ -35,5 +35,5 @@ print(pwd)
 #Control_Examples.Multimeter_Mode()
 
 # 7. Linear single channel sweep
-Control_Examples.Linear_Sweep_V1()
-#Control_Examples.Linear_Sweep_V2()
+#Control_Examples.Linear_Sweep_V1()
+Control_Examples.Linear_Sweep_V2()
