@@ -32,7 +32,7 @@ def Simple_Open_Close():
         # instantiate an object that interfaces with the IBM4
         the_dev = IBM4_Lib.Ser_Iface() # find the first connected IBM4, open in DC mode by default
         
-        #the_dev = IBM4_Lib.Ser_Iface(read_mode = 'AC') # find the first connected IBM4, open in DC mode
+        #the_dev = IBM4_Lib.Ser_Iface(read_mode = 'DC') # find the first connected IBM4, open in DC mode
         
         #the_dev = IBM4_Lib.Ser_Iface(read_mode = 'AC') # find the first connected IBM4, open in AC mode
         
@@ -196,7 +196,6 @@ def Differential_Readings():
         print("Analog Out: ",output_ch)
         
         the_dev.WriteVoltage(output_ch, Vset)
-        the_dev.ResetBuffer()
         time.sleep(1) # give it some time to settle
 
         vals = the_dev.DifferentialRead('A2', 'A4', 'Multiple Voltage', Nreads)
@@ -219,7 +218,7 @@ def Differential_Readings():
 
 def Multiple_Readings():
     """
-    Perform multiple readsings by different methods
+    Perform multiple readings by different methods
     use the overloaded ReadVoltage Method to obtain an averaged reading
 
     the user must be careful when using overloaded methods
@@ -294,6 +293,60 @@ def Multiple_Readings():
         print("Measured Voltages: ", val)
         #print("\nSR from each Read method are comparable")
 
+        del the_dev # destructor for the IBM4 object, closes comms
+    except Exception as e:
+        print(ERR_STATEMENT)
+        print(e)
+
+def Read_Waveform():
+    """
+    Perform multiple readings to read a waveform
+    use the overloaded ReadVoltage Method to obtain an averaged reading
+    or use the ReadMultipleVoltage Method directly
+
+    the user must be careful when using overloaded methods
+    python allows for different return types and different numbers of returned elements
+    what is not forbidden is permitted and exploited
+    """
+    
+    FUNC_NAME = ".Read_Waveform()"
+    ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
+
+    try:
+        # instantiate an object that interfaces with the IBM4
+        the_dev = IBM4_Lib.Ser_Iface() # find the first connected IBM4, open in DC mode by default
+        
+        Nreads = 501 # no. readings to be made        
+        input_ch = 'A3' # analog input channel on which readings are to be made
+
+        # time the measurement
+        start = time.time()
+        
+        # overloaded call to ReadMultipleVoltage
+        avg, err, vals = the_dev.ReadVoltage(input_ch, 'Multiple Voltage', Nreads)
+        
+        # Direct call to ReadMultipleVoltage
+        # avg, err, vals = the_dev.ReadMultipleVoltage(input_ch, Nreads) # 
+        
+        end = time.time()
+
+        # compute the time taken to perform all the measurements
+        # this time does not include the overheads incurred by the IBM4 itself
+        deltaT = end-start
+        measT = deltaT/(float(Nreads))
+        SR = 1.0/measT
+        
+        print("Analog Input: %(v1)s, Read Method: Multiple Voltage => ReadMultipleVoltage"%{"v1":input_ch})
+        print("%(v1)d measurements performed in %(v2)0.3f seconds"%{"v1":Nreads, "v2":deltaT})
+        print("%(v1)0.4f secs / measurement"%{"v1":measT})
+        print("Sample Rate: %(v1)0.2f Hz"%{"v1":SR})
+        print("Measured Average Voltage: %(v1)0.3f +/- %(v2)0.3f (V)\n"%{"v1":avg,"v2":err})
+
+        # Make a plot of the recorded waveform if you desire
+        # Write the data to a file, make a plot elsewhere
+        filename = 'Waveform_Data.txt'
+        numpy.savetxt(filename, vals, fmt = '%0.4f', delimiter = '\t')
+        
         del the_dev # destructor for the IBM4 object, closes comms
     except Exception as e:
         print(ERR_STATEMENT)
