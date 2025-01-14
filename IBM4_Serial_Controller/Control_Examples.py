@@ -314,7 +314,7 @@ def Read_Waveform():
 
     try:
         # instantiate an object that interfaces with the IBM4
-        the_dev = IBM4_Lib.Ser_Iface() # find the first connected IBM4, open in DC mode by default
+        the_dev = IBM4_Lib.Ser_Iface(read_mode = 'AC') # find the first connected IBM4
         
         Nreads = 501 # no. readings to be made        
         input_ch = 'A3' # analog input channel on which readings are to be made
