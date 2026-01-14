@@ -72,6 +72,7 @@ import serial
 import time
 import numpy
 import Sweep_Interval
+import subprocess
 
 # define the class for interfacing to an IBM4
 
@@ -317,8 +318,17 @@ class Ser_Iface(object):
                 raise EnvironmentError('Unsupported platform')
         
             baud_rate = 9600
-        
-            self.IBM4Port = None # assign IBM4Port to None 
+
+            path = ".portdata"
+            if os.path.exists(path):
+                if sys.platform.startswith('win'):
+                    subprocess.run(f'attrib -h "{path}"', shell=True)   
+                with open(path, "r") as f:
+                    port = f.read()
+                    #print(f'the saved port is {port}')
+                    ports.insert(0, port)
+            else: 
+                self.IBM4Port = None # assign IBM4Port to None 
 
             for port in ports:
                 try:
@@ -338,8 +348,20 @@ class Ser_Iface(object):
                             if loud: print(f'IBM4 found at {port}')
                             self.IBM4Port = port
                             s.close()
+                            #save port to hidden file:
+                            path = ".portdata"
+                            if sys.platform.startswith('win'):
+                                if os.path.exists(path):
+                                    subprocess.run(f'attrib -h "{path}"', shell=True)
+                            with open(path, "w") as f:
+                                f.write(port)
+                            #then make file hidden in Windows (already hidden in MacOS)
+                            if sys.platform.startswith('win'):
+                                subprocess.run(["attrib", "+h", path])
+
                             break # stop the search for an IBM4 at the first one you find   
                 except(OSError, serial.SerialException):
+                    # print("Error:", e)
                     # Ignore the errors that arise from non-IBM4 serial ports
                     pass
         except Exception as e:
@@ -811,7 +833,7 @@ class Ser_Iface(object):
                 read_result = self.instr_obj.read_until(size=read_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
                 read_result = self.instr_obj.read_until(b'\n',size=None) # read_result returned as bytes, must be cast to str before being parsed                    
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list
-                vals_flt = numpy.float_(vals_str[-no_reads:]) # convert the list of strings to floats using numpy, save as numpy array (better)
+                vals_flt = numpy.float64(vals_str[-no_reads:]) # convert the list of strings to floats using numpy, save as numpy array (better)
                 vals_mean = numpy.mean(vals_flt) # compute the average of all the diff_reads
                 vals_delta = 0.5*( numpy.max(vals_flt) - numpy.min(vals_flt) ) # compute the range of the diff_read
                 res = [vals_mean, vals_delta, vals_flt]
@@ -1030,7 +1052,7 @@ class Ser_Iface(object):
                 vals_str = re.findall(r'[-+]?\d+[\.]?\d*', str(read_result) ) # parse the numeric values of read_result into a list of strings
                 #vals_flt = [float(x) for x in vals_str] # convert the list of strings to floats, save as a list
                 # only interested in the last no_reads values so read backwards into the vals_str list using list-slice operator
-                vals_flt = numpy.float_(vals_str[-no_reads:]) # convert the list of strings to floats using numpy, save as numpy array (better)
+                vals_flt = numpy.float64(vals_str[-no_reads:]) # convert the list of strings to floats using numpy, save as numpy array (better)
                 if loud: 
                     print(read_result)
                     print(vals_flt) # print the parsed values
