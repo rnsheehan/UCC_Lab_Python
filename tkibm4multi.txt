@@ -63,7 +63,7 @@ class App:
         elif action == 2:
             self.the_dev.WriteVoltage('A1', float(self.voutval.get()))
         elif action == 3:
-            self.thedev.WritePWM(float(self.pwmpc.get()))
+            self.the_dev.WritePWM(float(self.pwmpc.get()))
         elif action == 4:
             self.the_dev.ZeroIBM4()
         elif action == 5:
