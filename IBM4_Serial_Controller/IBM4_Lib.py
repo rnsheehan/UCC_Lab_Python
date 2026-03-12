@@ -68,7 +68,7 @@ import os
 import sys
 import glob
 import re
-import serial
+import serial # this package is actually called pyserial, install using py -m pip install pyserial
 import time
 import numpy
 import Sweep_Interval
@@ -105,7 +105,7 @@ class Ser_Iface(object):
             # Dictionaries for the Read, Write, PWM Channels
             self.Read_Chnnls = {"A2":0, "A3":1, "A4":2, "A5":3, "D2":4}
             self.Write_Chnnls = {"A0":0, "A1":1}
-            self.PWM_Chnnls = {"D9":9, "D10":10, "D11":11, "D12":12, "D13":13}
+            self.PWM_Chnnls = {"D0":0, "D1":1, "D7":7, "D9":9, "D10":10, "D11":11, "D12":12, "D13":13}
             
             # Dictionary for the Read Mode
             self.Read_Modes = {"DC":0, "AC":1}
@@ -415,16 +415,16 @@ class Ser_Iface(object):
         Inputs: 
         output_channel is one of A0, A1
         set_voltage is the desired voltage output value from the channel
-        set_voltage must be in the range [0.0, 3.3)
+        set_voltage must be in the range [0.0, 3.3]
         """
 
-        self.FUNC_NAME = ".WriteSingleChnnl()" # use this in exception handling messages
+        self.FUNC_NAME = ".WriteVoltage()" # use this in exception handling messages
         self.ERR_STATEMENT = "Error: " + self.MOD_NAME_STR + self.FUNC_NAME
 
         try:
             c1 = True if self.instr_obj.isOpen() else False # confirm that the instrument object has been instantiated
             c2 = True if output_channel in self.Write_Chnnls else False # confirm that the output channel label is correct
-            c3 = True if set_voltage >= self.VMIN and set_voltage < self.VMAX else False # confirm that the set voltage value is in range
+            c3 = True if set_voltage >= self.VMIN and set_voltage < self.VMAX or abs(set_voltage - self.VMAX) < self.DELTA_VMIN else False # confirm that the set voltage value is in range
             c10 = c1 and c2 and c3 # if all conditions are true then write can proceed
         
             if c10:
@@ -438,7 +438,7 @@ class Ser_Iface(object):
                 if not c2:
                     self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\noutput_channel outside range {A0, A1}'
                 if not c3:
-                    self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nset_voltage outside range [0.0, 3.2]'
+                    self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nset_voltage %(v1)0.3f outside range [0.0, 3.3]'%{"v1":set_voltage}
                 raise Exception
         except Exception as e:
             print(self.ERR_STATEMENT)
@@ -452,7 +452,7 @@ class Ser_Iface(object):
         The PWM output must be between 0 and 100, and is a floating point value.
     
         instrument_obj is the open visa resource connected to dev_addr
-        percentage must be in the range [0.0, 100]
+        percentage (type: float) must be in the range [0.0, 100]
         """
 
         self.FUNC_NAME = ".WritePWM()" # use this in exception handling messages
@@ -479,6 +479,44 @@ class Ser_Iface(object):
             print(self.ERR_STATEMENT)
             print(e)
     
+    def WriteAnyPWM(self, pinOut, percentage):
+
+        """
+        This method interfaces with the IBM4 to set a pulse wave modulated (PWM) output signal.
+        The output Pin# must be: 0, 1, 7, 9, 10-13.
+        The PWM output must be between 0 and 100, and is a floating point value.
+    
+        instrument_obj is the open visa resource connected to dev_addr
+        percentage (type: float) must be in the range [0.0, 100]
+        input_channel (type: str) is one of the labels for the PWM output channels 'D0', 'D1', 'D7', 'D9', 'D10'-'D13'
+        
+        This method is not intended for use with IBM4 enhancement board
+        """
+
+        self.FUNC_NAME = ".WriteAnyPWM()" # use this in exception handling messages
+        self.ERR_STATEMENT = "Error: " + self.MOD_NAME_STR + self.FUNC_NAME
+
+        try:
+            c1 = True if self.instr_obj.isOpen() else False # confirm that the instrument object has been instantiated
+            c3 = True if percentage >= 0 and percentage < 101 else False # confirm that PWM percentage is a sensible value
+            c4 = True if pinOut in self.PWM_Chnnls else False # confirm that the pintOut channel label is correct
+        
+            c10 = c1 and c3 and c4 # if all conditions are true then write can proceed
+            if c10:
+                output_channel = self.PWM_Chnnls[pinOut] # when using the IBM4 enhancement board the PWM is fixed to D9
+                write_cmd = 'PWM%(v1)d:%(v2)d\r\n'%{"v1":output_channel, "v2":percentage}
+                self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
+                #self.ResetBuffer() # reset buffer between write, read cmd pairs
+            else:
+                if not c1:
+                    self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nNo comms established'
+                if not c3:
+                    self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\npercentage outside range [0, 100]'
+                raise Exception
+        except Exception as e:
+            print(self.ERR_STATEMENT)
+            print(e)
+
     # methods for obtaining data from the IBM4
     def ReadVoltage(self, input_channel, read_type = 'Single Voltage', no_reads = 10):
         
@@ -1327,6 +1365,16 @@ class Ser_Iface(object):
         print('\nSet PWM Output')
         pwmval = int( input( 'Enter PWM percentage: ' ) )
         self.WritePWM(pwmval)
+        
+    def AnyPWMPrompt(self):
+        """
+        Method for getting the IBM4 to output PWM signal from any PWM
+        """
+
+        print('\nSet PWM Output')
+        pwmval = int( input( 'Enter PWM percentage: ' ) )
+        pwmout = input( 'Enter PWM Channel: ' )
+        self.WriteAnyPWM(pwmout, pwmval)
     
     def DiffReadPrompt(self):
         """
@@ -1366,7 +1414,7 @@ class Ser_Iface(object):
         # this will make the code much cleaner
         # R. Sheehan 22 - 7 - 2024
 
-        self.FUNC_NAME = ".SingleChannelSweep()" # use this in exception handling messages
+        self.FUNC_NAME = ".SingleChannelSweepA()" # use this in exception handling messages
         self.ERR_STATEMENT = "Error: " + self.MOD_NAME_STR + self.FUNC_NAME
 
         try:
@@ -1394,7 +1442,8 @@ class Ser_Iface(object):
                 print('Sweeping voltage on Analog Output:',swp_channel)
                 print('Fixed voltage of',v_fixed,'(V) on Analog Output:',fixed_channel,'\n')
                 count = 0
-                while v_set < v_end:
+                #while v_set < v_end:
+                for i in range(0, no_steps, 1):
                     step_data = numpy.array([]) # instantiate an empty numpy array to hold the data for each step of the sweep
                     self.WriteVoltage(swp_channel, v_set) # set the voltage at the analog output channel
                     time.sleep(DELAY) # Apply a fixed delay
@@ -1417,7 +1466,7 @@ class Ser_Iface(object):
                 if not c2:
                     self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\noutput_channel outside range {A0, A1}'
                 if not c3 or not c4 or not c5:
-                    self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nvoltage sweep bounds not appropriate for range [0.0, 3.3)'
+                    self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nvoltage sweep bounds not appropriate for range [0.0, 3.3]'
                 if not c6:
                     self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nn_steps not defined correctly'
                 if not c7:
@@ -1461,7 +1510,7 @@ class Ser_Iface(object):
         # Might not be too bad if I wrote another method to help the user unpack the A2x, A3x, A4x, A5x, D2x readings
         # R. Sheehan 23 - 7 - 2024
 
-        self.FUNC_NAME = ".SingleChannelSweep()" # use this in exception handling messages
+        self.FUNC_NAME = ".SingleChannelSweepB()" # use this in exception handling messages
         self.ERR_STATEMENT = "Error: " + self.MOD_NAME_STR + self.FUNC_NAME
 
         try:       
@@ -1469,7 +1518,7 @@ class Ser_Iface(object):
             c2 = True if swp_channel in self.Write_Chnnls else False # confirm that the output channel label is correct             
             c3 = voltage_interval.defined # check that the parameters in the interval have been defined correctly
             c7 = True if no_averages > 3 and no_averages < 103 else False # confirm that no. averages being taken is a sensible value
-            c8 = True if v_fixed >= self.VMIN and v_fixed < self.VMAX else False # confirm that the fixed voltage is in range
+            c8 = True if v_fixed >= self.VMIN and v_fixed <= self.VMAX else False # confirm that the fixed voltage is in range
             c10 = c1 and c2 and c3 and c7 and c8
         
             if c10:
@@ -1485,7 +1534,8 @@ class Ser_Iface(object):
                 print('Sweeping voltage on Analog Output:',swp_channel)
                 print('Fixed voltage of',v_fixed,'(V) on Analog Output:',fixed_channel,'\n')
                 count = 0
-                while v_set < voltage_interval.stop:
+                #while v_set < voltage_interval.stop:
+                for i in range(0, voltage_interval.Nsteps, 1):
                     step_data = numpy.array([]) # instantiate an empty numpy array to hold the data for each step of the sweep
                     self.WriteVoltage(swp_channel, v_set) # set the voltage at the analog output channel
                     time.sleep(DELAY) # Apply a fixed delay
