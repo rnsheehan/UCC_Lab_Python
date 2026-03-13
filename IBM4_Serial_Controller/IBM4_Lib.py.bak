@@ -448,7 +448,7 @@ class Ser_Iface(object):
 
         """
         This method interfaces with the IBM4 to set a pulse wave modulated (PWM) output signal.
-        The output Pin# must be: 5,7,9,10-13.
+        The output Pin defaults to pin D9 for this method
         The PWM output must be between 0 and 100, and is a floating point value.
     
         instrument_obj is the open visa resource connected to dev_addr
