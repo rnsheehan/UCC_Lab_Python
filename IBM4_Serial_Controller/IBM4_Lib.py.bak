@@ -146,7 +146,7 @@ class Ser_Iface(object):
         close the link to the instrument object when it goes out of scope
         """
         
-        if self.IBM4Port is not None and self.instr_obj.isOpen():
+        if self.IBM4Port != '' and self.instr_obj.isOpen():
             # close the link to the instrument object when it goes out of scope
             print('Closing Serial link with:',self.instr_obj.name)
             self.ZeroIBM4()

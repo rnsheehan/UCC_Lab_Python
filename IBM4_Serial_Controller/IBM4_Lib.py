@@ -186,16 +186,16 @@ class Ser_Iface(object):
     #         print(self.ERR_STATEMENT)
     #         print(e)
 
-    def CommsStatus(self):
+    def CommsStatus(self, loud = False):
         """
         investigate the status of the serial comms link
         """
         
         if self.IBM4Port is not None and self.instr_obj.isOpen():
-            print('Communication with:',self.instr_obj.name,' is open')
+            if loud: print('Communication with:',self.instr_obj.name,' is open')
             return True
         else:
-            print('Communication with: IBM4 is not open')
+            if loud: print('Communication with: IBM4 is not open')
             return False
             
     def OpenComms(self, read_mode = 'DC'):
@@ -218,7 +218,7 @@ class Ser_Iface(object):
                 # this is necessary because when the IBM4 is connected the AO are set to arbitrary values
                 self.ZeroIBM4()
 
-                self.CommsStatus()
+                self.CommsStatus(loud = True)
             else:
                 self.ERR_STATEMENT = self.ERR_STATEMENT + '\nNo IBM4 attached to PC'
                 raise Exception
@@ -506,7 +506,8 @@ class Ser_Iface(object):
                 output_channel = self.PWM_Chnnls[pinOut] # when using the IBM4 enhancement board the PWM is fixed to D9
                 write_cmd = 'PWM%(v1)d:%(v2)d\r\n'%{"v1":output_channel, "v2":percentage}
                 self.instr_obj.write( str.encode(write_cmd) ) # when using serial str must be encoded as bytes
-                #self.ResetBuffer() # reset buffer between write, read cmd pairs
+                read_result = self.instr_obj.read_until(size=write_cmd.__sizeof__()) # read_result returned as bytes and clear the return message  
+                read_result = self.instr_obj.read_until(b'\n',size=None) # read_result to clear the input buffer  
             else:
                 if not c1:
                     self.ERR_STATEMENT = self.ERR_STATEMENT + '\nCould not write to instrument\nNo comms established'
