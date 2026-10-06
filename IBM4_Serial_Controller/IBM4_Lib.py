@@ -312,6 +312,7 @@ class Ser_Iface(object):
             elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
                 # this excludes your current terminal "/dev/tty"
                 ports = glob.glob('/dev/tty[A-Za-z]*')
+                ports += glob.glob('dev/pts/*')
             elif sys.platform.startswith('darwin'):
                 ports = glob.glob('/dev/tty.*')
             else:
